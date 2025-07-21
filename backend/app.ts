@@ -20,7 +20,7 @@ import error from '../middleware/errorHandler';
 import postRouter from './PostController';
 import voteRouter from './voteController';
 import searchRoutes from './Search';
-
+import adminRoutes from './AdminRoutes';
 
 const app = express();
 
@@ -57,6 +57,7 @@ app.use('/vote', voteRouter);
 app.use('/comments/:id', commentReplyRoutes); 
 app.use('/save', saveRoutes);
 app.use('/search', searchRoutes);
+app.use('/admin', adminRoutes);
 app.use(error)
 
 app.use((req, res) => {
