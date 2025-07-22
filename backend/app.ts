@@ -8,6 +8,7 @@ import { Tag } from '../models/Tag';
 import { Votes } from '../models/Votes';
 import { ResetToken } from '../models/ResetToken';
 import { PostTag } from '../models/PostTags';
+import { Report } from '../models/Report';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './Auth';
 import uploadRoutes from './Uploads';
@@ -20,7 +21,8 @@ import error from '../middleware/errorHandler';
 import postRouter from './PostController';
 import voteRouter from './voteController';
 import searchRoutes from './Search';
-import adminRoutes from './AdminRoutes';
+import adminRoutes from './Admin';
+import reportRoutes from './Report';
 
 const app = express();
 
@@ -37,7 +39,7 @@ import { Dialect } from 'sequelize'; // Add this import if not already present
 const sequelize = new Sequelize({
     ...config.development,
     dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
-    models: [Comment, Post, User, SavedPost, Tag, Votes, ResetToken, PostTag],
+    models: [Comment, Post, User, SavedPost, Tag, Votes, ResetToken, PostTag, Report],
 });
 
 
@@ -58,6 +60,7 @@ app.use('/comments/:id', commentReplyRoutes);
 app.use('/save', saveRoutes);
 app.use('/search', searchRoutes);
 app.use('/admin', adminRoutes);
+app.use('/report', reportRoutes);
 app.use(error)
 
 app.use((req, res) => {
