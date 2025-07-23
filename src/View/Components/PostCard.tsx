@@ -17,6 +17,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import BookmarkIcon from '@mui/icons-material/Bookmark'; // For filled bookmark
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder'; // For outline bookmark
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { fetchEndpoint } from '../FetchEndpoint';
 import Menu from '@mui/material/Menu';
@@ -24,6 +25,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from "react-router-dom";
+import ReportDialog from './ReportDialog';
 
 interface PostCardProps {
   postId: string;
@@ -189,6 +191,62 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+
+  const openReportDialog = () => {
+    setReportDialogOpen(true);
+  };
+
+  const closeReportDialog = () => {
+    setReportDialogOpen(false);
+  };
+
+  const [hasReported, setHasReported] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkReportStatus = async () => {
+      try {
+        const response = await fetchEndpoint(`/report/check/${postId}`, 'GET', token);
+        if (response && typeof response.hasReported === 'boolean') {
+          setHasReported(response.hasReported);
+        }
+      } catch (error) {
+        console.error('Failed to check report status', error);
+      }
+    };
+
+    checkReportStatus();
+  }, [postId, isAuthenticated, token]);
+
+  const handleReportSubmit = async (reason: string, comment: string) => {
+    if (!isAuthenticated) {
+      alert('You need to be logged in to report.');
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      const response = await fetchEndpoint(`/report/${postId}`, 'POST', token, {
+        reason,
+        comment,
+      });
+      if (response) {
+        alert('Post reported successfully.');
+        setHasReported(true);
+        closeReportDialog();
+      } else {
+        alert('Failed to report post.');
+      }
+    } catch (error) {
+      alert('Error reporting post.');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -197,10 +255,10 @@ const PostCard: React.FC<PostCardProps> = ({
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 5) return "Baru saja";
-    if (diffMins < 60) return `${diffMins} menit yang lalu`;
-    if (diffHours < 24) return `${diffHours} jam yang lalu`;
-    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+    if (diffMins < 5) return "Just now";
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
 
     return date.toLocaleDateString("id-ID", {
       day: "numeric",
@@ -399,6 +457,25 @@ const PostCard: React.FC<PostCardProps> = ({
             <IconButton sx={{ color: '#aaa' }}>
               <ShareOutlinedIcon />
             </IconButton>
+            {loggedInUserId !== userIdOwnerPost && (
+              <>
+                <IconButton
+                  sx={{ color: '#aaa' }}
+                  onClick={openReportDialog}
+                  disabled={!isAuthenticated || hasReported}
+                  title={hasReported ? 'You have already reported this post' : 'Report post'}
+                >
+                  <ReportOutlinedIcon />
+                </IconButton>
+
+                <ReportDialog
+                  open={reportDialogOpen}
+                  onClose={closeReportDialog}
+                  onSubmit={handleReportSubmit}
+                  disabled={isReporting}
+                />
+              </>
+            )}
           </Stack>
         </Stack>
       </CardContent>

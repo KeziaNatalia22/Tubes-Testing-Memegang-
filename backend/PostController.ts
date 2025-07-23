@@ -12,7 +12,7 @@ import { Op } from 'sequelize';
 import { countVotes, countComments, fetchTagName, fetchUserData, buildPostWithAllData} from './FetchPostData';
 import jwt from 'jsonwebtoken';
 import { appConfig } from '../config/app';
-import { SavedPost } from '../models/Saved_Post'
+import { SavedPost } from '../models/Saved_Post';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -128,7 +128,9 @@ router.get(
 
         if (token) {
             const decoded = jwt.verify(token, appConfig.jwtSecret);
-            userId = decoded.id;
+            if (typeof decoded === 'object' && 'id' in decoded) {
+                userId = (decoded as jwt.JwtPayload).id;
+            }
         }
         
         const type = req.query.type as string;
