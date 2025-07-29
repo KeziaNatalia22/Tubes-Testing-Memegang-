@@ -14,6 +14,8 @@ import CreatePostModal from './View/CreatePostModal';
 import PostDetailPage from './View/PostDetailPage';
 import EditPostModal from './View/EditPostModal';
 import Profile from './View/Account&Profile/Profile';
+import Admin from './View/AdminPage';
+import AdminRoute from './View/AdminRoute';
 // import ErrorBoundary from './View/ErrorBoundary';
 // import Comment from './View/Comments/CommentList';
 
@@ -60,7 +62,7 @@ function AppContent() {
     return (
         <div className="App">
             <Navbar />
-            <div className="content-container">
+            <div className="content-container" style={{ marginTop: '64px', minHeight: 'calc(100vh - 64px)' }}>
                 <Routes>
                     <Route path="/" element={<HomeWithSearch type="fresh"/>} />
                     <Route path="/fresh" element={<HomeWithSearch type="fresh"/>} />
@@ -69,6 +71,7 @@ function AppContent() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />
                     <Route path="/profile/:username" element={<Profile />} />
+                    <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                     {/* Add other routes here */}
                 </Routes>
             </div>

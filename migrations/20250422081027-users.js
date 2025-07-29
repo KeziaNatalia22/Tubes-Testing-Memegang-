@@ -34,6 +34,12 @@ export default {
                 allowNull: false,
                 defaultValue: Sequelize.NOW,
             },
+            role: {
+                type: Sequelize.ENUM
+                    ('user', 'admin'),
+                allowNull: false,
+                defaultValue: 'user',
+            },
         });
     },
 

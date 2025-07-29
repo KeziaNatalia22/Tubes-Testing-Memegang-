@@ -457,6 +457,14 @@ const PostCard: React.FC<PostCardProps> = ({
             <IconButton sx={{ color: '#aaa' }}>
               <ShareOutlinedIcon />
             </IconButton>
+            {/* Debug: Log values to console */}
+            {console.log('Debug Report Button:', {
+              loggedInUserId,
+              userIdOwnerPost,
+              showReport: loggedInUserId !== userIdOwnerPost,
+              isAuthenticated,
+              hasReported
+            })}
             {loggedInUserId !== userIdOwnerPost && (
               <>
                 <IconButton

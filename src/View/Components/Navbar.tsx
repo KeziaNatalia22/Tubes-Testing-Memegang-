@@ -372,6 +372,15 @@ const MuiNavbar: React.FC = () => {
                   >
                     Post
                   </NavButton>
+                  {userData?.role === 'admin' && (
+                    <NavButton
+                      component={RouterLink}
+                      to="/admin"
+                      startIcon={<FAIcon icon="fas fa-shield-halved" />}
+                    >
+                      Admin
+                    </NavButton>
+                  )}
                   <IconButton
                     edge="end"
                     aria-label="account"
@@ -526,6 +535,17 @@ const MuiNavbar: React.FC = () => {
                 >
                   Post
                 </Button>
+                {userData?.role === 'admin' && (
+                  <Button 
+                    fullWidth 
+                    variant="outlined" 
+                    sx={{ mb: 1 }}
+                    onClick={() => { navigate('/admin'); setDrawerOpen(false); }}
+                    startIcon={<FAIcon icon="fas fa-shield-halved" />}
+                  >
+                    Admin
+                  </Button>
+                )}
                 <Button 
                   fullWidth 
                   variant="outlined" 

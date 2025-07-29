@@ -41,4 +41,11 @@ export class User extends Model {
         allowNull: true,
     })
     bio?: string;
+
+    @Column({
+        type: DataType.ENUM('user', 'admin'),
+        allowNull: false,
+        defaultValue: 'user',
+    })
+    role!: 'user' | 'admin';
 }

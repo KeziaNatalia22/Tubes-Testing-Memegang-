@@ -74,6 +74,7 @@ router.get('/me', authMiddleware, controllerWrapper(async (req: Request, res: Re
         profilePicture: profilePictureUrl,
         username: user.username,
         email: user.email,
+        role: user.role,
     };
 }));
 

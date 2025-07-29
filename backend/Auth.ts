@@ -206,7 +206,7 @@ router.get('/session', verifySession, controllerWrapper(async (req, res, next) =
   };
 
   const user = await User.findByPk(decoded.id, {
-    attributes: ['id', 'email', 'name', 'profilePicture', 'username']
+    attributes: ['id', 'email', 'name', 'profilePicture', 'username', 'role']
   });
 
   if (!user) {
