@@ -1,135 +1,113 @@
 import express, { Request, Response } from 'express';
-import { User } from '../models/User';
-import { Post } from '../models/Post';
 import { Report } from '../models/Report';
-import { controllerWrapper } from '../utils/controllerWrapper';
-import authMiddleware from '../middleware/Auth';
-import adminMiddleware from '../middleware/AdminAuth';
+import { Post } from '../models/Post';
+import { User } from '../models/User';
+import { countVotes, countComments, fetchTagName, fetchUserData, buildPostWithAllData} from './FetchPostData';
+import { Votes } from '../models/Votes';
 
-const router = express.Router({ mergeParams: true });
 
-// GET /admin/reports - Fetch all reported posts with status 'pending'
-router.get('/report', authMiddleware, adminMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+const router = express.Router();
+
+// GET /admin/reports
+
+// GET /admin/reports
+router.get('/reports', async (req: Request, res: Response) => {
   try {
     const reports = await Report.findAll({
       where: { status: 'pending' },
       include: [
         {
-          model: Post,
-          as: 'post',
-          include: [
-            {
-              model: User,
-              as: 'user',
-              attributes: ['id', 'name', 'email', 'profilePicture']
-            }
-          ]
-        },
-        {
           model: User,
-          as: 'user', // reporter
-          attributes: ['id', 'name', 'email']
-        }
+          as: 'reporter',
+          attributes: ['id', 'name', 'email'],
+        },
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
 
-    const transformedReports = reports.map(report => ({
-      id: report.id,
-      post_id: report.post_id,
-      user_id: report.user_id,
-      reason: report.reason,
-      comment: report.comment,
-      status: report.status,
-      created_at: report.createdAt,
-      post: {
-        id: report.post.id,
-        title: report.post.title,
-        image_url: report.post.image_url,
-        user_id: report.post.user_id,
-        name: report.post.user?.name || 'Unknown User',
-        profilePicture: report.post.user?.profilePicture || '',
-        createdAt: report.post.createdAt,
-        commentsCount: 0,
-        upvotes: 0,
-        downvotes: 0,
-        tags: report.post.tags || []
-      },
-      reporter: {
-        id: report.user.id,
-        name: report.user.name,
-        email: report.user.email
-      }
-    }));
+    const formattedReports = await Promise.all(
+      reports.map(async (report: any) => {
+        const post = await Post.findByPk(report.post_id);
+        if (!post) return null;
 
-    res.json(transformedReports);
+        const votesCount = await countVotes(post.id);
+        const commentCount = await countComments(post.id);
+        const tagsName = await fetchTagName(post.id);
+        const postOwner = await fetchUserData(post.user_id);
+
+        const voteState = await Votes.findOne({
+          where: { post_id: post.id, user_id: report.user_id }, // user yang report
+        });
+
+        return {
+          id: report.id,
+          post_id: report.post_id,
+          user_id: report.user_id,
+          reason: report.reason,
+          comment: report.comment,
+          status: report.status,
+          created_at: report.createdAt,
+          reporter: report.reporter,
+          post: {
+            ...post.toJSON(),
+            ...votesCount,
+            commentsCount: commentCount,
+            tags: tagsName,
+            is_upvoted: voteState?.is_upvote ?? null,
+            userIdOwnerPost: postOwner?.id ?? null,
+            name: postOwner?.username ?? null,
+            profilePicture: postOwner?.profilePicture ?? null,
+          },
+        };
+      })
+    );
+
+    const filteredReports = formattedReports.filter(r => r !== null); // buang yg null kalau postnya ga ada
+    res.json(filteredReports);
   } catch (error) {
-    console.error('Error fetching reported posts:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Failed to fetch reports:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-}));
+});
 
-// PUT /admin/reports/:reportId - Update report status: approve (delete post) or reject
-router.put('/report/:reportId', authMiddleware, adminMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+// PUT /admin/reports/:id
+router.put('/reports/:id', async (req: Request, res: Response) => {
+  const reportId = req.params.id;
+  const { action } = req.body;
+
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject".' });
+  }
+
   try {
-    const { reportId } = req.params;
-    const { action } = req.body; // 'approve' or 'reject'
-
-    if (!['approve', 'reject'].includes(action)) {
-      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject".' });
-    }
-
     const report = await Report.findByPk(reportId, {
       include: [{ model: Post, as: 'post' }]
     });
 
     if (!report) {
-      return res.status(404).json({ message: 'Report not found' });
+      return res.status(404).json({ error: 'Report not found' });
     }
 
-    if (report.status !== 'pending') {
-      return res.status(400).json({ message: 'Report is not pending.' });
-    }
+    // Set status
+    report.status = action === 'approve' ? 'resolved' : 'dismissed';
+    await report.save();
 
-    const sequelize = Report.sequelize;
-    const transaction = await sequelize!.transaction();
-
-    try {
-      if (action === 'approve') {
-        // Mark report as resolved
-        await report.update({ status: 'resolved', updatedAt: new Date() }, { transaction });
-
-        // Delete the reported post
-        if (report.post) {
-          await report.post.destroy({ transaction });
-        }
-
-        await transaction.commit();
-        res.json({
-          message: 'Report approved. Post has been removed.',
-          action: 'approved',
-          reportId: report.id,
-          postId: report.post_id
-        });
+    // Jika disetujui dan post masih ada, hapus post-nya
+    if (action === 'approve') {
+      if (report.post) {
+        // Delete semua report yang terkait post ini (atau yang statusnya pending)
+        await Report.destroy({ where: { post_id: report.post.id } });
+        await report.post.destroy();
       } else {
-        // Reject the report
-        await report.update({ status: 'dismissed', updatedAt: new Date() }, { transaction });
-
-        await transaction.commit();
-        res.json({
-          message: 'Report rejected. Post remains active.',
-          action: 'rejected',
-          reportId: report.id
-        });
+        console.warn(`Post for report ${reportId} not found when trying to delete`);
       }
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
     }
+
+    res.json({ message: `Report has been ${action === 'approve' ? 'resolved and post deleted' : 'dismissed'}` });
   } catch (error) {
-    console.error('Error processing report:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Failed to update report:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-}));
+});
 
 export default router;

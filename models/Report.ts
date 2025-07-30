@@ -28,7 +28,7 @@ export class Report extends Model {
   })
   declare user_id: string;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, { as: 'reporter' })
   declare user: User;
 
   @ForeignKey(() => Post)
