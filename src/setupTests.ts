@@ -66,9 +66,3 @@ global.FormData = class FormData {
     return this.data.values();
   }
 } as any;
-
-// Mock setTimeout for testing
-global.setTimeout = jest.fn((fn) => {
-  fn();
-  return 1;
-}) as any;

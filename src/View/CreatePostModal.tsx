@@ -13,8 +13,7 @@ import {
   Alert,
   AlertTitle,
   InputAdornment,
-  styled,
-  alpha
+  styled
 } from '@mui/material';
 import { fetchEndpoint } from './FetchEndpoint';
 import FAIcon from './Components/FAIcon';
@@ -395,3 +394,7 @@ const CreatePostModal: React.FC = () => {
 };
 
 export default CreatePostModal;
+
+function alpha(main: string, arg1: number): import("csstype").Property.BackgroundColor | readonly string[] | readonly import("csstype").Property.BackgroundColor[] | undefined {
+  throw new Error('Function not implemented.');
+}

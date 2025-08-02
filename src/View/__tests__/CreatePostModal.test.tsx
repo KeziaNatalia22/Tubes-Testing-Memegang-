@@ -21,28 +21,11 @@ jest.mock('../Components/FAIcon', () => {
 let mockModalState = {
   isCreatePostModalOpen: true,
   closeCreatePostModal: jest.fn(),
-  openCreatePostModal: jest.fn(),
-  isLoginModalOpen: false,
-  closeLoginModal: jest.fn(),
-  openLoginModal: jest.fn(),
-  isRegisterModalOpen: false,
-  closeRegisterModal: jest.fn(),
-  openRegisterModal: jest.fn(),
-  isForgotPasswordModalOpen: false,
-  closeForgotPasswordModal: jest.fn(),
-  openForgotPasswordModal: jest.fn(),
-  isResetPasswordModalOpen: false,
-  closeResetPasswordModal: jest.fn(),
-  openResetPasswordModal: jest.fn(),
-  isEditPostModalOpen: false,
-  closeEditPostModal: jest.fn(),
-  openEditPostModal: jest.fn(),
-  editPostData: null,
-  switchToRegister: jest.fn(),
-  switchToLogin: jest.fn(),
-  switchToForgotPassword: jest.fn(),
-  switchToResetPassword: jest.fn(),
 };
+
+jest.mock('../contexts/ModalContext', () => ({
+  useModal: () => mockModalState,
+}));
 
 jest.mock('../contexts/ModalContext', () => ({
   useModal: () => mockModalState,
@@ -324,7 +307,7 @@ describe('CreatePostModal', () => {
   });
 
   describe('Form Submission', () => {
-    it('should submit form successfully with valid data', async () => {
+    it('should submit form successfully with correct FormData format', async () => {
       const user = userEvent.setup();
       
       // Create a promise that we can control
@@ -337,28 +320,31 @@ describe('CreatePostModal', () => {
       
       renderComponent();
       
-      // Fill form
+      // Fill form with specific test data
       const titleInput = screen.getByLabelText('Post Title') as HTMLInputElement;
-      await user.type(titleInput, 'Test Title');
+      await user.type(titleInput, 'My Test Meme');
       
       const tagInput = screen.getByLabelText('Add Tags') as HTMLInputElement;
       await user.type(tagInput, 'funny');
       await user.keyboard('{Enter}');
+      await user.type(tagInput, 'meme');
+      await user.keyboard('{Enter}');
       
-      const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
+      const file = new File(['test image data'], 'test-meme.jpg', { type: 'image/jpeg' });
       const fileInput = getFileInput();
       await user.upload(fileInput, file);
       
       const submitButton = screen.getByRole('button', { name: /post meme/i });
       await user.click(submitButton);
       
-      // Check loading state - should be visible now
+      // Check loading state
       expect(screen.getByText(/uploading/i)).toBeInTheDocument();
       expect(submitButton).toBeDisabled();
       
       // Now resolve the promise
       resolvePromise!({ success: true });
       
+      // ✅ ENHANCED: Verify both the call and the FormData content
       await waitFor(() => {
         expect(mockFetchEndpoint).toHaveBeenCalledWith(
           '/post/submit',
@@ -368,6 +354,17 @@ describe('CreatePostModal', () => {
         );
       });
       
+      const callArgs = mockFetchEndpoint.mock.calls[0];
+      const formData = callArgs[3] as FormData;
+      
+      // Verify FormData contains correct fields and values
+      expect(formData.get('title')).toBe('My Test Meme');
+      expect(formData.getAll('tag')).toEqual(['funny', 'meme']);
+      expect(formData.get('image')).toBe(file);
+      expect((formData.get('image') as File).name).toBe('test-meme.jpg');
+      expect((formData.get('image') as File).type).toBe('image/jpeg');
+      
+      // Verify success message
       await waitFor(() => {
         expect(screen.getByText('Post created successfully!')).toBeInTheDocument();
       });
@@ -394,6 +391,7 @@ describe('CreatePostModal', () => {
       });
     });
   });
+  
 
   describe('Form Reset', () => {
     it('should reset form when reset button is clicked', async () => {
@@ -418,13 +416,20 @@ describe('CreatePostModal', () => {
     });
   });
 
-  describe('Loading States', () => {
-    it('should disable submit button during loading', async () => {
+  describe('Modal Closing', () => {
+    it('should close modal after successful submission', async () => {
       const user = userEvent.setup();
-      mockFetchEndpoint.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 1000)));
+      
+      let resolvePromise: (value: any) => void;
+      const controlledPromise = new Promise(resolve => {
+        resolvePromise = resolve;
+      });
+      
+      mockFetchEndpoint.mockReturnValue(controlledPromise);
       
       renderComponent();
       
+      // Fill and submit form
       const titleInput = screen.getByLabelText('Post Title') as HTMLInputElement;
       await user.type(titleInput, 'Test Title');
       
@@ -435,9 +440,65 @@ describe('CreatePostModal', () => {
       const submitButton = screen.getByRole('button', { name: /post meme/i });
       await user.click(submitButton);
       
-      expect(submitButton).toBeDisabled();
+      // Resolve the promise (simulate successful submission)
+      resolvePromise!({ success: true });
+      
+      // Wait for success and verify modal closes
       await waitFor(() => {
-        expect(screen.getByText(/uploading/i)).toBeInTheDocument();
+        expect(screen.getByText('Post created successfully!')).toBeInTheDocument();
+        expect(mockModalState.closeCreatePostModal).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('should close modal when close button is clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+      
+      // Find the close button more directly
+      const closeButton = document.querySelector('button span[data-icon="fas fa-times"]')
+        ?.closest('button') as HTMLButtonElement;
+      
+      expect(closeButton).toBeTruthy(); // Make sure we found it
+      
+      await user.click(closeButton);
+      
+      expect(mockModalState.closeCreatePostModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should close modal when clicking outside', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+      
+      // Click the MUI backdrop - this consistently works
+      const muiBackdrop = document.querySelector('.MuiBackdrop-root');
+      expect(muiBackdrop).toBeTruthy();
+      
+      await user.click(muiBackdrop!);
+      
+      expect(mockModalState.closeCreatePostModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not close modal when submit fails', async () => {
+      const user = userEvent.setup();
+      mockFetchEndpoint.mockRejectedValue(new Error('Submission failed'));
+      
+      renderComponent();
+      
+      // Fill form
+      const titleInput = screen.getByLabelText('Post Title') as HTMLInputElement;
+      await user.type(titleInput, 'Test Title');
+      
+      const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
+      const fileInput = getFileInput();
+      await user.upload(fileInput, file);
+      
+      const submitButton = screen.getByRole('button', { name: /post meme/i });
+      await user.click(submitButton);
+      
+      // Wait for error message
+      await waitFor(() => {
+        expect(screen.getByText('Submission failed')).toBeInTheDocument();
+        expect(mockModalState.closeCreatePostModal).not.toHaveBeenCalled();
       });
     });
   });
