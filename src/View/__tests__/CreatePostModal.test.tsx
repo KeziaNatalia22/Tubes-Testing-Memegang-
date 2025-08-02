@@ -27,9 +27,6 @@ jest.mock('../contexts/ModalContext', () => ({
   useModal: () => mockModalState,
 }));
 
-jest.mock('../contexts/ModalContext', () => ({
-  useModal: () => mockModalState,
-}));
 
 const mockFetchEndpoint = fetchEndpoint as jest.MockedFunction<typeof fetchEndpoint>;
 const theme = createTheme();
