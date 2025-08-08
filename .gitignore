@@ -32,3 +32,6 @@ dist-ssr
 *.sln
 *.sw?
 /config/config.json
+
+# testing
+/coverage
