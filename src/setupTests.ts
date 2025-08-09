@@ -39,7 +39,8 @@ global.FormData = class FormData {
       this.data.set(name, value);
     }
   }
-  
+
+  // Get the first value for a given key
   get(name: string) {
     const value = this.data.get(name);
     return Array.isArray(value) ? value[0] : value;
