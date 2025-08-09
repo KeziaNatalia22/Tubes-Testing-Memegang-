@@ -11,11 +11,6 @@ import { fetchEndpoint } from '../FetchEndpoint';
 
 // Mock the dependencies
 jest.mock('../FetchEndpoint');
-jest.mock('../Components/FAIcon', () => {
-  return function MockFAIcon({ icon, style }: { icon: string; style?: React.CSSProperties }) {
-    return <span data-testid="fa-icon" data-icon={icon} style={style}>{icon}</span>;
-  };
-});
 
 // Mock the modal context with a dynamic state
 let mockModalState = {

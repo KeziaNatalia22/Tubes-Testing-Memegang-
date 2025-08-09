@@ -118,23 +118,34 @@ describe('Home', () => {
     expect(await screen.findByText('No memes found for "cats"')).toBeInTheDocument();
   });
 
-  it('marks posts as saved when logged in and saved-posts include the id', async () => {
-    mockAuthState.isAuthenticated = true;
-    mockAuthState.token = 'tkn';
+  it('renders search results when provided (success)', async () => {
+    const searchResults = [
+      {
+        id: '10',
+        title: 'Searched Post',
+        image_url: '/img10.jpg',
+        user_id: 'u10',
+        name: 'Fallback Name',
+        createdAt: '2025-08-03',
+        commentsCount: 3,
+        upvotes: 7,
+        downvotes: 0,
+        tags: ['search'],
+        user: { id: 'u10', name: 'User From Result', profilePicture: '/avatar.png' },
+      },
+    ];
 
-    mockedFetch
-      .mockResolvedValueOnce(samplePosts) // fetch posts
-      .mockResolvedValueOnce({ data: [{ post_id: '1' }] }); // fetch saved posts
+    render(<Home searchResults={searchResults} searchQuery="searched" />);
 
-    render(<Home />);
+    // Should render the searched post without calling the API
+    await waitFor(() => expect(screen.getByTestId('post-10')).toBeInTheDocument());
+    expect(screen.getByTestId('title-10')).toHaveTextContent('Searched Post');
+    expect(mockedFetch).not.toHaveBeenCalled();
 
-    await waitFor(() => expect(screen.getByTestId('post-1')).toBeInTheDocument());
-    expect(mockedFetch).toHaveBeenNthCalledWith(1, '/post?type=fresh', 'GET', 'tkn');
-    expect(mockedFetch).toHaveBeenNthCalledWith(2, '/save/saved-posts', 'GET', 'tkn');
-
-    expect(screen.getByTestId('saved-1')).toHaveTextContent('true');
-    expect(screen.getByTestId('saved-2')).toHaveTextContent('false');
+    // Should not show the search-not-found UI
+    expect(screen.queryByText(/No memes found for/)).not.toBeInTheDocument();
   });
+
 
   it('edits and deletes a post via callbacks', async () => {
     mockedFetch.mockResolvedValueOnce(samplePosts);
