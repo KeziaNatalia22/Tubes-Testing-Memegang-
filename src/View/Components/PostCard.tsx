@@ -41,7 +41,7 @@ interface PostCardProps {
   onSaveClick?: () => void;
   tags: string[];
   is_upvoted?: boolean;
-  userIdOwnerPost: string;
+  userIdOwnerPost?: string;
   loggedInUserId?: string;
   onEdit?: (updatedPost: any) => void;
   onDelete?: (postId: string) => void;
@@ -332,7 +332,7 @@ const PostCard: React.FC<PostCardProps> = ({
               </Typography>
             </Box>
           </Stack>
-          {loggedInUserId === userIdOwnerPost && (
+          {loggedInUserId && userIdOwnerPost && loggedInUserId === userIdOwnerPost && (
             <>
               <IconButton sx={{ color: 'gray' }} onClick={handleMenuOpen}>
                 <MoreVertIcon />

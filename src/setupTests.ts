@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
 
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder as any;
+global.TextDecoder = TextDecoder as any;
+
 // Mock window.URL.createObjectURL and revokeObjectURL
 Object.defineProperty(window, 'URL', {
   value: {
@@ -35,7 +39,8 @@ global.FormData = class FormData {
       this.data.set(name, value);
     }
   }
-  
+
+  // Get the first value for a given key
   get(name: string) {
     const value = this.data.get(name);
     return Array.isArray(value) ? value[0] : value;
