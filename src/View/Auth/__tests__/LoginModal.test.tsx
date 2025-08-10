@@ -39,7 +39,7 @@ describe('LoginModal', () => {
     modalState.open = true;
   });
 
-  it('shows and hides via close, and shows error on failed login', async () => {
+  it('shows error on failed login', async () => {
     mockedFetch.mockRejectedValueOnce(new Error('Invalid login credentials'));
 
     render(<LoginModal />);
