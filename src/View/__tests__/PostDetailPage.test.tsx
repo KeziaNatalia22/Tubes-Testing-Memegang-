@@ -58,7 +58,29 @@ describe('PostDetailPage', () => {
     expect(await screen.findByText(/Post not found/i)).toBeInTheDocument();
   });
 
-  it('renders post card and comments, and allows comment submit', async () => {
+  it('renders post card and comments', async () => {
+    mockedFetch.mockResolvedValueOnce({
+      id: 'p-1',
+      title: 'Post Title',
+      name: 'john',
+      image_url: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      upvotes: 1,
+      downvotes: 0,
+      commentsCount: 0,
+      isSaved: false,
+      tags: [],
+    } as any);
+
+    render(<PostDetailPage />);
+
+    // Displays PostCard title
+    expect(await screen.findByTestId('post-card')).toHaveTextContent('Post Title');
+    expect(screen.getByTestId('fetch-comments')).toHaveTextContent('for p-1');
+  });
+
+  it('allows comment submit', async () => {
     mockedFetch
       .mockResolvedValueOnce({
         id: 'p-1',
@@ -77,12 +99,8 @@ describe('PostDetailPage', () => {
 
     render(<PostDetailPage />);
 
-    // Displays PostCard title
-    expect(await screen.findByTestId('post-card')).toHaveTextContent('Post Title');
-    expect(screen.getByTestId('fetch-comments')).toHaveTextContent('for p-1');
-
     // Type and submit a comment
-    const input = screen.getByPlaceholderText(/Leave a comment/i);
+    const input = await screen.findByPlaceholderText(/Leave a comment/i);
     await userEvent.type(input, 'Nice post');
     const btn = screen.getByRole('button', { name: /Post/i });
     await userEvent.click(btn);

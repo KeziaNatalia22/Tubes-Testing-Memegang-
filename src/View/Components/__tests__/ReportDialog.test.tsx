@@ -36,7 +36,7 @@ describe('ReportDialog', () => {
     expect(onSubmit).toHaveBeenCalledWith('other', 'extra context');
   });
 
-  it('submits non-other reason without comment and can cancel', async () => {
+  it('submits report with valid reason', async () => {
     const onClose = jest.fn();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
