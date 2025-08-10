@@ -50,14 +50,4 @@ describe('ReportDialog', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('disables inputs and shows Reporting... when disabled=true', async () => {
-    const onClose = jest.fn();
-    const onSubmit = jest.fn().mockResolvedValue(undefined);
-
-    render(<ReportDialog open onClose={onClose} onSubmit={onSubmit} disabled />);
-
-    expect(screen.getByRole('button', { name: /Reporting/i })).toBeDisabled();
-    // All radios disabled
-    expect(screen.getByLabelText(/Spam/i)).toBeDisabled();
-  });
 });

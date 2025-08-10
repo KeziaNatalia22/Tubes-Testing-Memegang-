@@ -118,7 +118,7 @@ describe('Home', () => {
     expect(await screen.findByText('No memes found for "cats"')).toBeInTheDocument();
   });
 
-  it('renders search results when provided (success)', async () => {
+  it('renders search results when provided', async () => {
     const searchResults = [
       {
         id: '10',
@@ -147,7 +147,7 @@ describe('Home', () => {
   });
 
 
-  it('edits and deletes a post via callbacks', async () => {
+  it('edits and deletes a post', async () => {
     mockedFetch.mockResolvedValueOnce(samplePosts);
     render(<Home />);
 
